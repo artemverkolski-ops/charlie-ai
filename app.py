@@ -55,7 +55,11 @@ def run_bot():
     )
 
     print("Charlie AI started...")
-    application.run_polling()
+
+    application.run_polling(
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True
+    )
 
 
 app = Flask(__name__)
