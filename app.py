@@ -1,7 +1,5 @@
 import os
 from flask import Flask
-from threading import Thread
-
 from telegram import Update
 from telegram.ext import (
     Application,
@@ -10,17 +8,22 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
-
 from openai import OpenAI
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+    return "Charlie AI is running!"
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Привет! 👋 Я Чарли. Напиши мне что-нибудь."
+        "Привет! 👋 Я Чарли. Рад знакомству!"
     )
 
 
@@ -32,7 +35,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         messages=[
             {
                 "role": "system",
-                "content": "Ты Чарли — дружелюбный русскоязычный помощник.",
+                "content": "Ты Чарли — дружелюбный помощник. Всегда отвечай на русском языке.",
             },
             {
                 "role": "user",
@@ -41,38 +44,21 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ],
     )
 
-    answer = response.choices[0].message.content
-
-    await update.message.reply_text(answer)
-
-
-def run_bot():
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
-
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, chat)
-    )
-
-    print("Charlie AI started...")
-
-    application.run_polling(
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True
+    await update.message.reply_text(
+        response.choices[0].message.content
     )
 
 
-app = Flask(__name__)
+application = Application.builder().token(TELEGRAM_TOKEN).build()
+
+application.add_handler(CommandHandler("start", start))
+application.add_handler(
+    MessageHandler(filters.TEXT & ~filters.COMMAND, chat)
+)
 
 
-@app.route("/")
-def home():
-    return "Charlie AI is running!"
-
-
-if __name__ == "__main__":
-    Thread(target=run_bot).start()
-
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
-    
+@app.before_request
+def start_bot():
+    if not getattr(app, "_bot_started", False):
+        app._bot_started = True
+        application.initialize()
