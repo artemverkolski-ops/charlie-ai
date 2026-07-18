@@ -51,7 +51,9 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     answer = response.choices[0].message.content
 
-    await update.message.reply_text(answer)def run_bot():
+    await update.message.reply_text(answer)
+    
+    def run_bot():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
